@@ -527,10 +527,7 @@ function renderSavedWorkouts() {
         return `<span style="color: blue;">${e.name}</span>: ${setsRepsText} <span style="color: red;"> ${noteText}</span>`;
       }).join('<br>');
       
-      console.log("Intensity:", intensity);
-console.log("Intensity Note:", intensityNote);
-console.log("Duration:", duration);
-console.log("Exercises:", exercises);
+
       // Concatenate intensity and duration with a space between them
       workoutDiv.innerHTML = `
       <p><strong>Workout on ${date}</strong><br>
