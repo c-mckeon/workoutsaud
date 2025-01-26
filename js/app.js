@@ -555,32 +555,70 @@ function getToday() {
   return `${year}-${month}-${day}`;
 }
 
-// Reference to the Firebase Realtime Database for storing text
-const textDatabaseRef = database.ref('savedText');
+// Reference to your Firebase database
+const messagesRef = database.ref('messages');
 
-// Select the textarea and button elements
-const inputTextBox = document.getElementById('inputTextBox');
-const saveTextButton = document.getElementById('saveTextButton');
+// Get references to DOM elements
+const saveButton = document.getElementById('saveButton');
+const messageInput = document.getElementById('messageInput');
+const messagesList = document.getElementById('messagesList'); // A container for displaying messages
 
-// Event listener for the save button
-saveTextButton.addEventListener('click', () => {
-  const textContent = inputTextBox.value.trim(); // Get the value from the textarea
-
-  if (textContent === '') {
-    alert('Please enter some text before saving.');
-    return;
+// Save a message to the database
+saveButton.addEventListener('click', () => {
+  const message = messageInput.value.trim();
+  if (message) {
+    messagesRef.push({ text: message })
+      .then(() => {
+        messageInput.value = ''; // Clear the input
+      })
+      .catch(error => {
+        console.error('Error saving message:', error);
+      });
   }
-
-  // Save the text content to Firebase
-  textDatabaseRef.push({ text: textContent, timestamp: Date.now() })
-    .then(() => {
-      alert('Text saved successfully!');
-      inputTextBox.value = ''; // Clear the textbox
-    })
-    .catch((error) => {
-      console.error('Error saving text to database:', error);
-    });
 });
+
+// Listen for new messages added to the database
+messagesRef.on('child_added', (snapshot) => {
+  const messageId = snapshot.key;
+  const messageData = snapshot.val();
+
+  // Create a new list item for the message
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('message');
+  messageElement.setAttribute('data-id', messageId);
+
+  // Add message text
+  const messageText = document.createElement('span');
+  messageText.textContent = messageData.text;
+  messageElement.appendChild(messageText);
+
+  // Add delete button
+  const deleteButton = document.createElement('button');
+  deleteButton.textContent = 'X';
+  deleteButton.classList.add('delete-button');
+  deleteButton.addEventListener('click', () => deleteMessage(messageId));
+  messageElement.appendChild(deleteButton);
+
+  // Append the message element to the messages list
+  messagesList.appendChild(messageElement);
+});
+
+// Remove message from the DOM when deleted
+messagesRef.on('child_removed', (snapshot) => {
+  const messageId = snapshot.key;
+  const messageElement = document.querySelector(`.message[data-id="${messageId}"]`);
+  if (messageElement) {
+    messagesList.removeChild(messageElement);
+  }
+});
+
+// Delete a message from the database
+function deleteMessage(messageId) {
+  messagesRef.child(messageId).remove()
+    .catch(error => {
+      console.error('Error deleting message:', error);
+    });
+}
 
 
 
