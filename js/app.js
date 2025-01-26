@@ -527,7 +527,10 @@ function renderSavedWorkouts() {
         return `<span style="color: blue;">${e.name}</span>: ${setsRepsText} <span style="color: red;"> ${noteText}</span>`;
       }).join('<br>');
       
-
+      console.log("Intensity:", intensity);
+console.log("Intensity Note:", intensityNote);
+console.log("Duration:", duration);
+console.log("Exercises:", exercises);
       // Concatenate intensity and duration with a space between them
       workoutDiv.innerHTML = `
       <p><strong>Workout on ${date}</strong><br>
@@ -551,6 +554,35 @@ function getToday() {
   const day = today.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+// Reference to the Firebase Realtime Database for storing text
+const textDatabaseRef = database.ref('savedText');
+
+// Select the textarea and button elements
+const inputTextBox = document.getElementById('inputTextBox');
+const saveTextButton = document.getElementById('saveTextButton');
+
+// Event listener for the save button
+saveTextButton.addEventListener('click', () => {
+  const textContent = inputTextBox.value.trim(); // Get the value from the textarea
+
+  if (textContent === '') {
+    alert('Please enter some text before saving.');
+    return;
+  }
+
+  // Save the text content to Firebase
+  textDatabaseRef.push({ text: textContent, timestamp: Date.now() })
+    .then(() => {
+      alert('Text saved successfully!');
+      inputTextBox.value = ''; // Clear the textbox
+    })
+    .catch((error) => {
+      console.error('Error saving text to database:', error);
+    });
+});
+
+
 
 // Initialize the app
 loadExercises();

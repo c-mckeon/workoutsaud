@@ -24,6 +24,17 @@
 
 
   </div>
+
+  
+  <div class="col-sm-2" style="margin-left: 90px; display: none;">
+    <button type="button" id="backupbtn" class="btn btn-primary" style="width: 120px;background-color: green; border-color: black;">backup</button>
+    <div id="passwordPrompt" style="display: none;">
+      <label for="password">Enter Password:</label>
+      <input type="password" id="password" />
+      <button type="button" id="submitPassword">Submit</button>
+      <div id="error" style="color: red;"></div>
+    </div>
+  </div>
   
   
   <hr>
@@ -116,6 +127,7 @@
     <div class="row p-3">
     <div class="col-2" id="showworkouts">
       <button style="width: 135px;" class="click">Show workouts</button>
+      <button style="width: 135px;" class="click hidden">Include activities</button>
     </div>
     <!-- Saved Workouts Section -->
     <div class="row p-3 hidden" id="savedWorkoutList">
@@ -128,10 +140,12 @@
   <!-- Firebase SDK 8.x -->
   <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-auth.js"></script>
 
   <!-- JavaScript -->
   <script src="js/app.js" defer></script>
   <script src="js/analytics.js" defer></script>
+  <script src="js/authaud.js" defer></script>
 
 
   <hr>
@@ -146,6 +160,11 @@
   
   
       <hr>
+      <div id="textBoxContainer" class="mt-3">
+        <textarea id="inputTextBox" class="form-control" placeholder="Enter your text here..." rows="4"></textarea>
+        <button id="saveTextButton" class="btn btn-primary mt-2">Save Text</button>
+      </div>
+      
 
   <style>
     /* Add styles for the toggle and fields */
