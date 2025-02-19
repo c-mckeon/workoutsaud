@@ -323,21 +323,21 @@ function renderExerciseList() {
     exerciseDiv.id = 'test';
 
     exerciseDiv.innerHTML = `
-<div class="row p-1">
-      <div class="col-3">${exercise.name}</div>
-      <div class="col-12 col-md-1">
+    <div class="row p-1">
+      <div class="col-12 col-md-3">${exercise.name}</div>
+      <div class="col-4 col-md-1">
         <input type="number" class="form-control sets-input" placeholder="Sets" data-index="${index}" 
           value="${exercise.sets !== 0 ? exercise.sets : ''}">
       </div>
-      <div class="col-12 col-md-1">
+      <div class="col-4 col-md-1">
         <input type="number" class="form-control reps-input" placeholder="Reps" data-index="${index}" 
           value="${exercise.reps !== 0 ? exercise.reps : ''}">
       </div>
-      <div class="col-12 col-md-2">
+      <div class="col-8 col-md-2">
         <input type="text" class="form-control note-input" placeholder="Add a note" data-index="${index}" 
           value="${exercise.note || ''}">
       </div>
-      <div class="col-12 col-md-1">
+      <div class="col-2 col-md-1">
         <button class="btn btn-danger remove-btn" data-index="${index}">X</button>
       </div>
     </div>
@@ -351,12 +351,12 @@ function renderExerciseList() {
   intensityDiv.id = 'introwcss';
 
   intensityDiv.innerHTML = `
- <div class="row p-1">
-  <div class="col-12 col-md-3">Workout Intensity</div>
-  <div class="col-12 col-md-2">
+  <div class="row p-1">
+  <div class="col-8 col-md-3">Workout Intensity</div>
+  <div class="col-8 col-md-2">
     <input type="number" id="workoutIntensity" class="form-control" placeholder="1-10" min="1" max="10" value="${currentWorkout.intensity || ''}">
   </div>
-  <div class="col-12 col-md-2">
+  <div class="col-8 col-md-2">
     <input type="text" id="workoutIntensityNote" class="form-control" placeholder="Misc. notes" value="${currentWorkout.intensityNote || ''}">
   </div>
   <div class="col-1"></div></div> <!-- Empty column to balance the grid -->
