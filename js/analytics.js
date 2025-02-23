@@ -21,23 +21,31 @@ function getIntensityColor(intensity) {
   if (intensity === 10) return 'rgb(65, 175, 65)';  // Intensity 10: Darkest Green
 }
 
-// Select the button element
-const clickButton = document.querySelector('.click');
+// Select only the button with ID "showchartbtn"
+const clickButton = document.querySelector('#showchartbtn');
+const filterTypeElement = document.querySelector('#filter-type');
 
-// Add event listener for the click event
 clickButton.addEventListener('click', () => {
   const visualsContainer = document.querySelector('#visuals-container');
 
   if (clickButton.textContent === 'Show chart') {
     console.log('Button clicked. Running analytics...');
-    runanalytics(); // Save the draft after adding an exercise
-    generatevisuals(); // Ensure this function is defined elsewhere
-    clickButton.textContent = 'Hide chart'; // Change button text to "Hide"
+    runanalytics();
+    generatevisuals();
+    
+    clickButton.textContent = 'Hide chart';
+    filterTypeElement.style.display = 'inline'; // Show the filter dropdown
   } else {
-    visualsContainer.innerHTML = ''; // Clear the content of visuals container
-    clickButton.textContent = 'Show chart'; // Change button text to "Show chart"
+    visualsContainer.innerHTML = '';
+    clickButton.textContent = 'Show chart';
+    
+    filterTypeElement.style.display = 'none'; // Hide the filter dropdown
   }
 });
+
+// Ensure the filter is hidden by default
+filterTypeElement.style.display = 'none';
+
 
 
 // Function to fetch workout data from Firebase
@@ -139,21 +147,34 @@ async function groupWorkoutsByDate() {
     const sourceSnapshot = await sourceRef.once('value');
     const data = sourceSnapshot.val();
 
-    if (!data || !data.workouts) {
-      console.error('No workouts data available.');
+    if (!data || !data.workouts || !data.exercises) {
+      console.error('No workouts or exercises data available.');
       return;
     }
 
     const workouts = Object.values(data.workouts);
+    const exercises = data.exercises;
 
     return workouts.reduce((acc, workout) => {
       const date = workout.date;
       const intensity = workout.intensity;
 
-      // Check if this workout is "Running" or "Regular"
-      const workoutType = workout.exercises && workout.exercises.length === 1 && workout.exercises[0].name === "Running"
-        ? "Running"
-        : "Regular";  // Default to "Regular" if it's not running
+      // Determine workout type
+      let workoutType = "Regular"; // Default to "Regular"
+      
+      if (workout.exercises && workout.exercises.length === 1) {
+        const exerciseName = workout.exercises[0].name;
+
+        if (exerciseName === "Running") {
+          workoutType = "Running";
+        } else {
+          // Check if exercise belongs to the "activity" class
+          const activityExercises = Object.values(exercises.activity || {}).map(e => e.name);
+          if (activityExercises.includes(exerciseName)) {
+            workoutType = "Activity";
+          }
+        }
+      }
 
       // Create or update workout entry for the date
       if (!acc[date]) {
@@ -166,9 +187,10 @@ async function groupWorkoutsByDate() {
       // Update the max intensity for the day
       acc[date].maxIntensity = Math.max(acc[date].maxIntensity, intensity);
 
-      // Update the workout type if it’s running (if one workout is running)
-      if (workoutType === "Running" && acc[date].type !== "Running") {
-        acc[date].type = "Running";
+      // Update the workout type if it's more specific (e.g., "Running" > "Activity" > "Regular")
+      const typePriority = { Running: 3, Activity: 2, Regular: 1 };
+      if (typePriority[workoutType] > typePriority[acc[date].type]) {
+        acc[date].type = workoutType;
       }
 
       return acc;
@@ -178,6 +200,7 @@ async function groupWorkoutsByDate() {
     console.error('Error fetching or processing workouts:', error);
   }
 }
+
 
 // Call the integrated groupWorkoutsByDate function
 groupWorkoutsByDate().then(workoutsByDate => {
@@ -193,6 +216,10 @@ groupWorkoutsByDate().then(workoutsByDate => {
 
 
 async function generatevisuals() {
+  // Read the filter value from the UI; default to 'all' if not set
+  const filterElement = document.getElementById('filter-type');
+  const selectedFilter = filterElement ? filterElement.value.toLowerCase() : 'all';
+
   const analyticsRef = firebase.database().ref('/analyticsdb/analytics/exercise-count');
   const sourceRef = firebase.database().ref('/');
 
@@ -202,7 +229,7 @@ async function generatevisuals() {
     const analyticsSnapshot = await analyticsRef.once('value');
     const analyticsData = analyticsSnapshot.val();
 
-    console.log('Analytics Data:', analyticsData); // Log the fetched analytics data
+    console.log('Analytics Data:', analyticsData);
 
     if (!analyticsData || !analyticsData.sortedExercises) {
       console.error('No analytics data available to generate visuals.');
@@ -211,8 +238,7 @@ async function generatevisuals() {
 
     const sortedExercises = analyticsData.sortedExercises; // Sorted exercise names
 
-
-    // Fetch workouts data
+    // Fetch workouts and exercises data
     const sourceSnapshot = await sourceRef.once('value');
     const data = sourceSnapshot.val();
 
@@ -220,72 +246,101 @@ async function generatevisuals() {
       console.error('No workouts data available to generate visuals.');
       return;
     }
-
-    const workouts = Object.values(data.workouts);
+    
+    // Get the activity exercises from the exercises node
+    const activityExercises = data.exercises && data.exercises.activity
+      ? Object.values(data.exercises.activity).map(e => e.name)
+      : [];
+    // Create a sanitized set for easy lookup
+    const activityExercisesSet = new Set(activityExercises.map(name => name.replace(/[.#$/\[\]]/g, '_')));
 
     // Call the helper function to group workouts by date
-    const workoutsByDate = await groupWorkoutsByDate(workouts);
+    const workoutsByDate = await groupWorkoutsByDate();
+    console.log('Workouts Grouped by Date:', workoutsByDate);
 
-    console.log('Workouts Grouped by Date:', workoutsByDate); // Log grouped workouts
+    // Step 1: Filter the dates based on the selected workout type
+    let filteredDates = Object.keys(workoutsByDate);
+    if (selectedFilter !== 'all') {
+      filteredDates = filteredDates.filter(date => {
+        return workoutsByDate[date].type.toLowerCase() === selectedFilter;
+      });
+    }
 
-    // Create HTML table dynamically
+    // Step 2: Identify the exercises that are actually used on these filtered dates
+    const relevantExercises = new Set();
+    filteredDates.forEach((date) => {
+      workoutsByDate[date].workouts.forEach((workout) => {
+        Object.values(workout.exercises || {}).forEach((exercise) => {
+          const sanitizedExercise = exercise.name.replace(/[.#$/\[\]]/g, '_');
+          relevantExercises.add(sanitizedExercise);
+        });
+      });
+    });
+
+    // Step 3: Create the HTML table dynamically using the filtered dates and relevant exercises
     const tableContainer = document.getElementById('visuals-container');
     tableContainer.innerHTML = ''; // Clear previous visuals
 
     const table = document.createElement('table');
     table.className = 'exercise-table';
     table.style.borderCollapse = 'collapse'; // Ensure borders collapse into a single border
+    table.style.marginTop = '10px';
 
     // Create header row (Dates)
     const headerRow = document.createElement('tr');
-    const emptyHeader = document.createElement('th'); // Empty cell for the corner
+    const emptyHeader = document.createElement('th'); // Empty cell at the top left
     headerRow.appendChild(emptyHeader);
 
-    Object.keys(workoutsByDate).forEach((date) => {
+    filteredDates.forEach((date) => {
       const dateHeader = document.createElement('th');
       const formattedDate = formatDate(date);
       dateHeader.textContent = formattedDate;
-      dateHeader.style.border = '1px solid black'; // Add border to each header cell
+      dateHeader.style.border = '1px solid black'; // Add border to header cell
       headerRow.appendChild(dateHeader);
     });
-
     table.appendChild(headerRow);
 
-    // Create rows for each exercise
+    // Step 4: Create rows only for relevant exercises
     sortedExercises.forEach((exercise) => {
+      const sanitizedExercise = exercise.replace(/[.#$/\[\]]/g, '_');
+
+      // Skip exercises not performed on filtered dates
+      if (!relevantExercises.has(sanitizedExercise)) {
+        return;
+      }
+      
+      // If filtering by regular, skip exercises that are part of the activity section
+      if (selectedFilter === 'regular' && activityExercisesSet.has(sanitizedExercise)) {
+        return;
+      }
+
       const row = document.createElement('tr');
 
       // Add row header (exercise name)
       const exerciseCell = document.createElement('th');
       exerciseCell.textContent = exercise;
-      exerciseCell.style.border = '1px solid black'; // Add border to the exercise name cell
+      exerciseCell.style.border = '1px solid black';
       row.appendChild(exerciseCell);
 
       // Add cells for each date
-      Object.keys(workoutsByDate).forEach((date) => {
+      filteredDates.forEach((date) => {
         const cell = document.createElement('td');
-        cell.style.border = '1px solid black'; // Add border to each data cell
+        cell.style.border = '1px solid black';
 
         // Check if the exercise was performed on this date
         const didExercise = workoutsByDate[date].workouts.some((workout) => {
           const exercises = workout.exercises || {};
           return Object.values(exercises).some((e) => {
-            const sanitizedExercise = e.name.replace(/[.#$/\[\]]/g, '_');
-            const sanitizedSortedExercise = exercise.replace(/[.#$/\[\]]/g, '_');
-            return sanitizedExercise === sanitizedSortedExercise;
+            const sanitizedEx = e.name.replace(/[.#$/\[\]]/g, '_');
+            return sanitizedEx === sanitizedExercise;
           });
         });
 
         // Get the intensity color for this date's workouts
         const intensityColor = getIntensityColor(workoutsByDate[date].maxIntensity);
 
-        // Color the cell based on the intensity color if the exercise was performed
-        if (didExercise) {
-          cell.style.backgroundColor = intensityColor; // Apply the intensity color
-        } else {
-          cell.style.backgroundColor = '#f0f0f0'; // Light gray for not performed
-        }
-
+        // Color the cell if the exercise was performed
+        cell.style.backgroundColor = didExercise ? intensityColor : '#f0f0f0';
         row.appendChild(cell);
       });
 
@@ -297,6 +352,9 @@ async function generatevisuals() {
     console.error('Error during generatevisuals:', error);
   }
 }
+
+
+
 
 
 
@@ -345,6 +403,22 @@ function getIntensityColor(intensity) {
   return 'rgb(255, 255, 255)'; // Default to white
 }
 
+function getactivityColor(intensity) {
+  intensity = intensity || 5; // Default intensity is 5 if not provided
+  intensity = Math.max(1, Math.min(10, intensity)); // Clamp intensity between 1 and 10
+  if (intensity === 1) return 'rgb(240, 230, 239)'; // Intensity 1: Light Green
+  if (intensity === 2) return 'rgb(240, 206, 237)'; // Intensity 2: Light Green
+  if (intensity === 3) return 'rgb(240, 199, 235)'; // Intensity 3: Light Green
+  if (intensity === 4) return 'rgb(240, 185, 236)'; // Intensity 4: Green
+  if (intensity === 5) return 'rgb(240, 171, 225)'; // Intensity 5: Green
+  if (intensity === 6) return 'rgb(240, 150, 219)'; // Intensity 6: Dark Green
+  if (intensity === 7) return 'rgb(236, 140, 211)'; // Intensity 7: Dark Green
+  if (intensity === 8) return 'rgb(230, 130, 205)'; // Intensity 8: Dark Green
+  if (intensity === 9) return 'rgb(220, 120, 196)'; // Intensity 9: Dark Green
+  if (intensity === 10) return 'rgb(210, 110, 190)'; // Intensity 10: Dark Green
+  return 'rgb(255, 255, 255)'; // Default to white
+}
+
 // Function to create the calendar based on workout data
 // Function to create the calendar based on workout data
 async function createCalendar() {
@@ -368,6 +442,50 @@ async function createCalendar() {
   `;
 
   let rows = "";
+
+
+// Define the common border styles
+const leftborder = "border-left: 2px solid black;";
+const topborder = "border-top: 2px solid black;";
+// Define the dates for the respective borders
+const leftdates = [
+  "2025-01-02", "2025-02-02", "2025-03-02", "2025-04-02", 
+  "2025-05-02", "2025-06-02", "2025-07-02", "2025-08-02", 
+  "2025-09-02", "2025-10-02", "2025-11-02", "2025-12-02"
+];
+const topdates = [
+  "2025-01-07", "2025-01-08", 
+  "2025-02-02","2025-02-03","2025-02-04","2025-02-05","2025-02-06","2025-02-07","2025-02-08",
+  "2025-03-02","2025-03-03","2025-03-04","2025-03-05","2025-03-06","2025-03-07","2025-03-08",
+  "2025-04-02","2025-04-03","2025-04-04","2025-04-05","2025-04-06","2025-04-07","2025-04-08",
+  "2025-05-02","2025-05-03","2025-05-04","2025-05-05","2025-05-06","2025-05-07","2025-05-08",
+  "2025-06-02","2025-06-03","2025-06-04","2025-06-05","2025-06-06","2025-06-07","2025-06-08",
+  "2025-07-02","2025-07-03","2025-07-04","2025-07-05","2025-07-06","2025-07-07","2025-07-08",
+  "2025-08-02","2025-08-03","2025-08-04","2025-08-05","2025-08-06","2025-08-07","2025-08-08",
+  "2025-09-02","2025-09-03","2025-09-04","2025-09-05","2025-09-06","2025-09-07","2025-09-08",
+  "2025-10-02","2025-10-03","2025-10-04","2025-10-05","2025-10-06","2025-10-07","2025-10-08",
+  "2025-11-02","2025-11-03","2025-11-04","2025-11-05","2025-11-06","2025-11-07","2025-11-08",
+  "2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-06","2025-12-07","2025-12-08",
+];
+// Generate the customBorders object dynamically
+const customBorders = leftdates.reduce((acc, date) => {
+  acc[date] = leftborder;  // Apply the left border for leftdates
+  return acc;
+}, {});
+
+// Add top borders to the customBorders object for topdates, combining with existing borders
+topdates.forEach(date => {
+  // If the date already has a left border, append the top border to it, otherwise just set the top border
+  if (customBorders[date]) {
+    customBorders[date] += ` ${topborder}`;
+  } else {
+    customBorders[date] = topborder;
+  }
+});
+
+
+  
+
   for (let i = 1; i <= 52; i++) {
     // Create each row for the week
     let row = `<tr><td>Week ${i}</td>`;
@@ -391,9 +509,9 @@ async function createCalendar() {
       let color;
 
       // Check if today has no workout
-  if (currentDate.toISOString().split('T')[0] === today.toISOString().split('T')[0] && !workoutData) {
-  color = 'rgb(255, 255, 146)'; // Yellow for today if no workout
-}
+      if (currentDate.toISOString().split('T')[0] === today.toISOString().split('T')[0] && !workoutData) {
+        color = 'rgb(255, 255, 146)'; // Yellow for today if no workout
+      }
 
       // Check if the current date is a past day with no workout
       else if (currentDate < today && !workoutData) {
@@ -402,7 +520,10 @@ async function createCalendar() {
       // Check workout type if workout data exists
       else if (workoutData) {
         if (workoutData.type === 'Running') {
-          color = 'rgb(109, 135, 238)'; // Blue for running workouts
+          color = 'rgb(139, 160, 243)'; // Blue for running workouts
+        } else if (workoutData.type === 'Activity') {
+          color = getactivityColor(workoutData.maxIntensity); // Color based on maxIntensity for regular workouts
+
         } else {
           color = getIntensityColor(workoutData.maxIntensity); // Color based on maxIntensity for regular workouts
         }
@@ -412,7 +533,10 @@ async function createCalendar() {
         color = 'rgb(255, 255, 255)';
       }
 
-      row += `<td style="background-color:${color};border:1px solid grey;"></td>`;
+      // Apply custom borders if defined
+      const customBorderStyle = customBorders[currentDateString] || "";
+
+      row += `<td style="background-color:${color};border:1px solid grey;${customBorderStyle}"></td>`;
     }
 
     row += `</tr>`;
@@ -422,6 +546,7 @@ async function createCalendar() {
   // Insert the table into the calendar container
   container.innerHTML = `<table border="1" style="border-collapse: collapse;">${headerRow}${rows}</table>`;
 }
+
 
 
 
@@ -448,3 +573,6 @@ document.getElementById("showcal").querySelector("button").addEventListener("cli
     button.textContent = 'Show calendar'; // Change button text back to "Show calendar"
   }
 });
+
+
+

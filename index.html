@@ -11,21 +11,21 @@
   
   <div class="header" style="display: inline-flex; align-items: center; margin-left: 20px;">
     <h1 style="margin-right: 20px;  flex-grow: 1;">Workout Tracker</h1> <!-- Adding right margin to create space between the heading and the button -->
-  <div style="display: flex;">
-    <div class="col-sm-2" style="margin-left: 90px;">
-      <button type="button" id="validateBtn" class="btn btn-primary" style="width: 120px;background-color: green; border-color: black;">Start clock</button>
+    <div style="display: flex;">
+      <div class="col-sm-2" style="margin-left: 90px;">
+        <button type="button" id="validateBtn" class="btn btn-primary" style="width: 120px;background-color: green; border-color: black;">Start clock</button>
+      </div>
+      <div class="col-2 " style="margin-left: 80px; display: none">
+        <button type="button" id="pauseBtn" class="btn btn-primary">Pause</button>
+      </div>
+      <div class="col-2" style="margin-left: 40px; display: none;">
+        <button type="button" id="resetBtn" class="btn btn-primary" style="background-color: red; border: none;">reset</button>
+      </div>
     </div>
-    <div class="col-2 " style="margin-left: 80px; display: none" >
-      <button type="button" id="pauseBtn" class="btn btn-primary">Pause</button>
-    </div>
-    <div class="col-2" style="margin-left: 40px; display: none; " >
-      <button type="button" id="resetBtn" class="btn btn-primary" style="background-color: red; border: none;">reset</button>
-    </div></div>
-
-
   </div>
-
   
+  <hr>
+
   <div class="col-sm-2" style="margin-left: 90px; display: none;">
     <button type="button" id="backupbtn" class="btn btn-primary" style="width: 120px;background-color: green; border-color: black;">backup</button>
     <div id="passwordPrompt" style="display: none;">
@@ -36,15 +36,11 @@
     </div>
   </div>
   
-  
-  <hr>
   <!-- Workout Management Section -->
   <div id="workoutManagement">
-    
     <div style="margin-left: 20px;"><h2>Start Workout</h2></div>
    
     <form id="workoutForm"> 
-      
       <div class="row p-3">
         <!-- Exercise Label -->
         <div class="col-3">
@@ -57,85 +53,160 @@
         </div>
       
         <!-- Add Exercise Button -->
-        <div class="col-sm-2">
+        <div class="col-sm-5">
           <button type="button" id="addExerciseBtn" class="btn btn-primary">Add</button>
-        </div>
-      </div>
+        
 
+        <div style="margin-left: 20px; display: inline-flex;" >
+          <div class="form-check" >
+            <input type="checkbox" id="seefocusCheckbox" class="form-check-input">
+            <label class="form-check-label" for="seefocusCheckbox">Focus Areas:</label>
+          </div>
+        </div></div>
+        
+
+      </div>
     </form>
   </div>
 
-
-
-    <div class="row" id="exerciseList">
-      <!-- List of added exercises will appear here -->
+  <div class="row" id="exerciseList">
+    <!-- List of added exercises will appear here -->
+  </div>
+    
+  <div class="row p-3">
+    <div class="col-sm-2">
+      <button style="width: 135px;" id="saveWorkoutBtn">Save Workout</button>
     </div>
-    
-    <div class="row p-3">
-      <div class="col-sm-2">
-        <button  style="width: 135px;" id="saveWorkoutBtn">Save Workout</button>
-      </div>
-      
-    </div>
-    
-    
-<hr>
+  </div>
+
+  <hr>
 
   <!-- Add Exercise Section -->
-  <div class="row p-3" id="addExerciseSectiondiv" >
-    
-    <div class="col-sm-2">
-      <button style="width: 135px;" id="toggleFormBtn">Create exercise</button>
+  <div class="row p-3" id="addExerciseSectiondiv">
+    <!-- Add and Edit Section -->
+    <div class="col-12">
+        <button style="width: 135px;" id="toggleFormBtn">Add and Edit</button>
+        <section id="addExerciseSection" style="margin-top: 10px;" class="hidden">
+            <form id="addExerciseForm" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <label for="newExerciseName">Exercise Name:</label>
+                <input type="text" id="newExerciseName" placeholder="Enter exercise name" required>
+                
+                <div class="row align-items-center">
+                  <div class="col-auto">
+                    <label for="exerciseCategory">Choose Category:</label>
+                  </div>
+                  <div class="col">
+                    <select id="exerciseCategory" class="form-control">
+                      <option value="upper body push">Upper body push</option>
+                      <option value="upper body pull">Upper body pull</option>
+                      <option value="core">Core</option>
+                      <option value="legs">Legs</option>
+                      <option value="groin, hips, glutes">Groin, Hips, Glutes</option>
+                      <option value="misc physio">Misc. physio</option>
+                      <option value="full body">Full Body</option>
+                      <option value="activity">Activity</option>
+                      <option value="complex functional">Complex Functional</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div class="row align-items-center">
+                  <div class="col-auto">
+                    <label>
+                      <input type="checkbox" id="focusCheckbox"> Focus Areas:
+                    </label>
+                  </div>
+                  <!-- Preserve the focus container here -->
+                  <div class="col" id="focusContainer" style="display: none;">
+                    <select id="focusCategory" multiple class="form-control">
+                      <option value="addNew">Add New</option>
+                    </select>
+                  </div>
+                </div>
+                
+                
+                <button type="button" id="saveNewExerciseBtn">Add Exercise</button>
+            </form>
+            <button style="width: 160px; margin-top: 10px;" id="showeditorbtn" >Workout Editor</button>
+            <button style="width: 160px; margin-top: 10px;" id="showexoeditorbtn" >Exercise Editor</button>
+        </section> 
     </div>
+    <!-- Editor Section (Appears Below) -->
+
+        <div id="workouteditor" >
+            <div id="editorsection" style="margin-top: 10px;" class="hidden">
+                <button type="button" onclick="prevNode()">⬅️</button>
+                <button type="button" onclick="nextNode()">➡️</button>
+                <button type="button" onclick="addpastexercise()">➕ Add exercise</button>
+                <button type="button" onclick="saveChanges()">💾 Save changes</button>
+                <button type="button" onclick="deleteworkout()">🗑️ Delete workout</button>
+                <form id="editForm"></form>
+                <div style="margin-top: 10px; border-left: 10px solid rgb(255, 213, 0); padding-left: 10px;" id="fields"></div>
+            </div>
+        </div>
+        <div style="margin-top: 10px;" class="hidden" id="exerciseeditor" >
+              <!-- Optionally, add a selector for the type if needed -->
+
+
+              <!-- Your exercise management section -->
+              <div id="exoeditorsection">
+                <button type="button" onclick="prevexo()">⬅️</button>
+                <button type="button" onclick="nextexo()">➡️</button>
+                <button type="button" onclick="saveexo()">💾 Save changes</button>
+                <button type="button" onclick="deleteexo()">🗑️ Delete exercise</button><br>
+              <div style="margin-top: 10px; border-left: 10px solid rgb(255, 157, 0); padding-left: 10px;">
+                <select style="margin-top: 10px;" id="typeSelector">
+                  <option value="exercises">Exercises</option>
+                  <option value="focusareas">Focus Areas</option>
+                </select>
+  
+                <!-- Dropdown for selecting a category -->
+                <select id="categorySelector"></select>
+                <div id="exerciseeditorsection" style="margin-top: 10px;"></div>
+              </div></div>
+
+          </div>
+      </div>
+
+</div>
+
     
-    <section id="addExerciseSection" style="margin-top: 10px;" class="hidden">
-      <form id="addExerciseForm" >
-        <label for="newExerciseName">Exercise Name:</label>
-        <input type="text" id="newExerciseName" placeholder="Enter exercise name" required>
-        
-        <label for="exerciseCategory">Choose Category:</label>
-        <select id="exerciseCategory">
-          <option value="upper body push">Upper body push</option>
-          <option value="upper body pull">Upper body pull</option>
-          <option value="core">Core</option>
-          <option value="legs">Legs</option>
-          <option value="groin, hips, glutes">Groin, Hips, Glutes</option>
-          <option value="misc physio">Misc. physio</option>
-          <option value="full body">Full Body</option>
-          <option value="activity">Activity</option>
-          <!-- Add more categories as needed -->
-        </select>
-        
-        <button type="button" id="saveNewExerciseBtn">Add Exercise</button>
-      </form>
-    </section>
+  <hr>
+
+  <div class="row p-3">
+    <div class="col-5" id="showchart">
+      <button style="width: 135px;" id="showchartbtn" class="click">Show chart</button>
+      <select id="filter-type" onchange="generatevisuals()">
+        <option value="all">All Days</option>
+        <option value="regular">Workout</option>
+        <option value="running">Running</option>
+        <option value="activity">Activity</option>
+      </select>
+      
+      
+    </div>
+    <div id="visuals-container"></div>
   </div>
-    <hr>
 
+  <hr>
 
-<div class="row p-3">
-<div class="col-2" id="showchart">
-  <button style="width: 135px;"class="click" >Show chart</button>
-</div>
-
-<div id="visuals-container"></div>
-</div>
-
-    <hr>
-
-
-    <div class="row p-3">
-    <div class="col-2" id="showworkouts">
+  <div class="row p-3">
+    <div class="col-5" id="showworkouts">
       <button style="width: 135px;" class="click">Show workouts</button>
-      <button style="width: 135px;" class="click hidden">Include activities</button>
+      <select id="workout-filter" style="display: none;">
+        <option value="all">All</option>
+        <option value="regular">Workouts</option>
+        <option value="running">Running</option>
+        <option value="activity">Activity</option>
+      </select>
+      
     </div>
     <!-- Saved Workouts Section -->
     <div class="row p-3 hidden" id="savedWorkoutList">
       <!-- Saved workouts will appear here -->
     </div>
   </div>
-    
-    
 
   <!-- Firebase SDK 8.x -->
   <script src="https://www.gstatic.com/firebasejs/8.7.1/firebase-app.js"></script>
@@ -145,7 +216,6 @@
   <!-- JavaScript -->
   <script src="js/app.js" defer></script>
   <script src="js/analytics.js" defer></script>
-  <script src="js/authaud.js" defer></script>
 
 
   <hr>
@@ -158,14 +228,16 @@
     <div id="calendar-container" style="padding-top: 20px; display: none;"></div>
   </div>
   
+  <hr>
+
   
-  <div>
-    <input type="text" id="messageInput" placeholder="Type your message">
-    <button id="saveButton">Save</button>
-  </div>
-  <div id="messagesList"></div> <!-- Container for displaying messages -->
-  
-      
+
+
+
+
+
+
+
 
   <style>
     /* Add styles for the toggle and fields */
@@ -180,5 +252,28 @@
       display: none;
     }
   </style>
+
+<script type="text/javascript">
+// Firebase configuration (replace with your project details)
+const firebaseConfig = {
+  apiKey: "AIzaSyB8CkVxCccR0ohc0kHtJKhPZTzmcNbtfcY",
+  authDomain: "workoutsaud-662c2.firebaseapp.com",
+  databaseURL: "https://workoutsaud-662c2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "workoutsaud-662c2",
+  storageBucket: "workoutsaud-662c2.firebasestorage.app",
+  messagingSenderId: "505814671249",
+  appId: "1:505814671249:web:b70b9157a0a53961fe0430"
+};
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();  // Realtime Database initialized here
+
+</script>
+
+
+
+
+
+
 </body>
 </html>
