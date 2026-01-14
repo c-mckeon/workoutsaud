@@ -437,7 +437,7 @@ async function createCalendar() {
   const allWorkoutsByDate = await groupWorkoutsByDate();
   const workoutsByDate = filterWorkoutsByYear(allWorkoutsByDate, selectedYear);
 
-const container = document.getElementById("calendar-table");
+const container = document.getElementById("calendar-table"); 
 
 
   const headerRow = `
